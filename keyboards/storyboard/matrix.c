@@ -5,16 +5,47 @@
 #include "gpio.h"
 #include "wait.h"
 #include "action.h"
+#include "config.h"
+#include "EPD_3in7.h"
+#include "GUI_Paint.h"
+#include "storyboard_image.h"
 
 #ifdef CONSOLE_ENABLE
 #include "printf.h"
 #endif
+
+// FIXME: temporary display function using waveshare SDKs. Add
+// quantum painter support with new display driver.
+void display_init(void)
+{
+    if (DEV_Module_Init() != 0) {
+        return;
+    }
+
+    EPD_3IN7_4Gray_Init();
+    EPD_3IN7_4Gray_Clear();
+    Paint_Clear(BLACK);
+
+    Paint_NewImage(storyboard_image,
+                   EPD_3IN7_WIDTH, EPD_3IN7_HEIGHT, 90, BLACK);
+    Paint_SetScale(4);
+    Paint_SelectImage(storyboard_image);
+    EPD_3IN7_4Gray_Display(storyboard_image);
+
+    EPD_3IN7_Sleep();
+    DEV_Delay_ms(2000);
+    DEV_Module_Exit();
+}
 
 void matrix_init_custom(void) {
     if (sizeof(matrix_row_t) != sizeof(uint16_t)) {
         return;
     }
 
+    // FIXME: ideally display is only reinitialized when flashing new FW.
+    // Display is currently cleared and reset on every boot because datasheet
+    // recommends frequent clears.
+    display_init();
     setPinOutput(NMATRIX_LD);
     setPinOutput(MATRIX_CLK);
     setPinOutput(MATRIX_SI);
